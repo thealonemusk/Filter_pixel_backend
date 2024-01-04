@@ -10,7 +10,6 @@ app = FastAPI()
 RAW_IMAGE_DIR = 'raw_images'
 CONVERTED_IMAGE_DIR = 'converted_images'
 PROCESS_INFO_FILE = 'process_info.json'
-SUPPORTED_EXTENSIONS = ['.IIQ', '.3FR', '.DCR', '.K25', '.KDC', '.CRW', '.CR2', '.CR3', '.ERF', '.MEF', '.MOS', '.NEF', '.NRW', '.ORF', '.PEF', '.RW2', '.ARW', '.SRF', '.SR2', '.DNG']
 
 def process_image(file_path):
     exif_info = {}
@@ -34,8 +33,19 @@ def create_preview(file_path, preview_path):
         print(f"Error creating preview: {e}")
 
 def get_supported_raw_files(directory):
-    raw_files = [file_name for file_name in os.listdir(directory) if any(file_name.upper().endswith(ext) for ext in SUPPORTED_EXTENSIONS)]
+    supported_extensions = ['.IIQ', '.3FR', '.DCR', '.K25', '.KDC', '.CRW', '.CR2','.CR3', '.ERF', '.MEF', '.MOS', '.NEF', '.NRW', '.ORF', '.PEF', '.RW2', '.ARW', '.SRF', '.SR2' , '.DNG']
+    raw_files = [file_name for file_name in os.listdir(directory) if any(file_name.upper().endswith(ext) for ext in supported_extensions)]
     return raw_files
+
+def get_process_info():
+    process_info = {}
+    if os.path.exists(PROCESS_INFO_FILE):
+        try:
+            with open(PROCESS_INFO_FILE, 'r') as f:
+                process_info = json.load(f)
+        except json.JSONDecodeError:
+            pass
+    return process_info
 
 def needs_processing(raw_file_path, converted_file_path):
     process_info = get_process_info()
@@ -48,15 +58,19 @@ def update_process_info(raw_file_path, timestamp):
     with open(PROCESS_INFO_FILE, 'w') as f:
         json.dump(process_info, f)
 
-def get_process_info():
-    process_info = {}
-    if os.path.exists(PROCESS_INFO_FILE):
-        try:
-            with open(PROCESS_INFO_FILE, 'r') as f:
-                process_info = json.load(f)
-        except json.JSONDecodeError:
-            pass
-    return process_info
+@app.on_event("startup")
+async def startup_event():
+    raw_files = get_supported_raw_files(RAW_IMAGE_DIR)
+    
+    for file_name in raw_files:
+        raw_file_path = os.path.join(RAW_IMAGE_DIR, file_name)
+        converted_file_path = os.path.join(CONVERTED_IMAGE_DIR, file_name.replace(os.path.splitext(file_name)[1], '.jpg'))
+        
+        if needs_processing(raw_file_path, converted_file_path):
+            create_preview(raw_file_path, converted_file_path)
+            update_process_info(raw_file_path, os.path.getmtime(raw_file_path))
+
+
 
 @app.get('/images')
 async def get_images():
@@ -80,11 +94,10 @@ async def get_image_preview(filename: str):
     file_path = os.path.join(CONVERTED_IMAGE_DIR, filename.replace(os.path.splitext(filename)[1], '.jpg'))
     if needs_processing(os.path.join(RAW_IMAGE_DIR, filename), file_path):
         raw_file_path = os.path.join(RAW_IMAGE_DIR, filename)
-        preview_generator = create_preview_generator(raw_file_path)
-        create_preview(file_path, preview_generator)
+        create_preview(raw_file_path, file_path)
         update_process_info(raw_file_path, os.path.getmtime(raw_file_path))
 
-    return StreamingResponse(open(file_path, "rb"), media_type='image/jpeg')
+    return FileResponse(file_path, media_type='image/jpeg')
 
 @app.get('/download/{filename}')
 async def download_image(filename: str):
