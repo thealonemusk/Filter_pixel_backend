@@ -7,3 +7,4 @@ Werkzeug==2.2.2
 exifread==2.3.0
 Flask-Cors==3.0.10
 gunicorn==21.2.0
+uvicorn==0.15.0
