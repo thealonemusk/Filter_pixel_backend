@@ -4,6 +4,7 @@ from exifread import process_file
 import os
 from flask_cors import CORS
 import rawpy
+from urllib.parse import quote
 from werkzeug.urls import url_quote  # Importing the specific function
 
 RAW_IMAGE_DIR = 'raw_images'
@@ -91,14 +92,12 @@ def get_images():
 @app.route('/image-preview/<filename>')
 def get_image_preview(filename):
     file_path = os.path.join(IMAGE_DIR, filename)
-    preview_path = 'images/previews/' + url_quote(filename.replace(os.path.splitext(filename)[1], '_preview.jpg'))  # Using url_quote
+    preview_path = 'images/previews/' + quote(filename.replace(os.path.splitext(filename)[1], '_preview.jpg'))
 
     if not os.path.exists(preview_path):
         create_preview(file_path, preview_path)
 
     return send_file(preview_path, mimetype='image/jpeg')
-
-
 
 @app.route('/download/<filename>')
 def download_image(filename):
