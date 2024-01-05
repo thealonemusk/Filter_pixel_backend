@@ -1,7 +1,13 @@
 from flask import Flask, jsonify, send_file
 from PIL import Image
+from PIL.ExifTags import TAGS
+# from exifread import ExifImage
 from exifread import process_file
+# from exifread import ExifImage
+# from exifread import process_file, exif_log, __version__
+# from exifread.tags import DEFAULT_STOP_TAG, FIELD_TYPES, FIELD_TYPE_NAMES  
 import os
+import json
 from flask_cors import CORS
 import rawpy
 from urllib.parse import quote
@@ -20,9 +26,10 @@ def process_image(file_path):
     exif_info = {}
     try:
         with open(file_path, 'rb') as image_file:
-            img = ExifImage(image_file)
-            for tag, value in img.exif.items():
-                exif_info[str(tag)] = str(value)
+            tags = process_file(image_file)
+            for tag, value in tags.items():
+                if tag not in ('JPEGThumbnail', 'TIFFThumbnail', 'Filename', 'EXIF MakerNote'):
+                    exif_info[str(tag)] = str(value)
     except Exception as e:
         print(f"Error processing image: {e}")
     return exif_info
@@ -63,6 +70,19 @@ def update_process_info(raw_file_path, timestamp):
     with open(PROCESS_INFO_FILE, 'w') as f:
         json.dump(process_info, f)
 
+def get_exif_data(file_path):
+    exif_info = {}
+    try:
+        image = Image.open(file_path)
+        exif = image._getexif()
+        if exif:
+            for tag, value in exif.items():
+                decoded_tag = TAGS.get(tag, tag)
+                exif_info[decoded_tag] = value
+    except Exception as e:
+        print(f"Error getting EXIF data: {e}")
+    return exif_info
+
 @app.route('/images')
 def get_images():
     image_list = []
@@ -80,24 +100,25 @@ def get_images():
 
     return jsonify({'images': image_list})
 
-# @app.route('/image-preview/<filename>')
-# def get_image_preview(filename):
-#     file_path = os.path.join(CONVERTED_IMAGE_DIR, filename.replace(os.path.splitext(filename)[1], '.jpg'))
-#     if needs_processing(os.path.join(RAW_IMAGE_DIR, filename), file_path):
-#         raw_file_path = os.path.join(RAW_IMAGE_DIR, filename)
-#         create_preview(raw_file_path, file_path)
-#         update_process_info(raw_file_path, os.path.getmtime(raw_file_path))
-
-#     return send_file(file_path, mimetype='image/jpeg')@app.route('/image-preview/<filename>')
 @app.route('/image-preview/<filename>')
 def get_image_preview(filename):
-    file_path = os.path.join(IMAGE_DIR, filename)
-    preview_path = 'images/previews/' + quote(filename.replace(os.path.splitext(filename)[1], '_preview.jpg'))
+    file_path = os.path.join(CONVERTED_IMAGE_DIR, filename.replace(os.path.splitext(filename)[1], '.jpg'))
+    if needs_processing(os.path.join(RAW_IMAGE_DIR, filename), file_path):
+        raw_file_path = os.path.join(RAW_IMAGE_DIR, filename)
+        create_preview(raw_file_path, file_path)
+        update_process_info(raw_file_path, os.path.getmtime(raw_file_path))
 
-    if not os.path.exists(preview_path):
-        create_preview(file_path, preview_path)
+    return send_file(file_path, mimetype='image/jpeg')
 
-    return send_file(preview_path, mimetype='image/jpeg')
+# @app.route('/image-preview/<filename>')
+# def get_image_preview(filename):
+#     file_path = os.path.join(CONVERTED_IMAGE_DIR, filename)
+#     preview_path = 'images/previews/' + quote(filename.replace(os.path.splitext(filename)[1], '_preview.jpg'))
+
+#     if not os.path.exists(preview_path):
+#         create_preview(file_path, preview_path)
+
+#     return send_file(preview_path, mimetype='image/jpeg')
 
 @app.route('/download/<filename>')
 def download_image(filename):
