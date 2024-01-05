@@ -1,11 +1,7 @@
 from flask import Flask, jsonify, send_file
 from PIL import Image
 from PIL.ExifTags import TAGS
-# from exifread import ExifImage
 from exifread import process_file
-# from exifread import ExifImage
-# from exifread import process_file, exif_log, __version__
-# from exifread.tags import DEFAULT_STOP_TAG, FIELD_TYPES, FIELD_TYPE_NAMES  
 import os
 import json
 from flask_cors import CORS
@@ -110,15 +106,6 @@ def get_image_preview(filename):
 
     return send_file(file_path, mimetype='image/jpeg')
 
-# @app.route('/image-preview/<filename>')
-# def get_image_preview(filename):
-#     file_path = os.path.join(CONVERTED_IMAGE_DIR, filename)
-#     preview_path = 'images/previews/' + quote(filename.replace(os.path.splitext(filename)[1], '_preview.jpg'))
-
-#     if not os.path.exists(preview_path):
-#         create_preview(file_path, preview_path)
-
-#     return send_file(preview_path, mimetype='image/jpeg')
 
 @app.route('/download/<filename>')
 def download_image(filename):
@@ -128,4 +115,4 @@ def download_image(filename):
     return send_file(file_path, mimetype='application/octet-stream', as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=3000 , debug=True)
