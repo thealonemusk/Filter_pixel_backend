@@ -1,22 +1,22 @@
 from flask import Flask, jsonify, send_file
-from PIL import Image
-from PIL.ExifTags import TAGS
-from exifread import process_file
+from flask_cors import CORS
+from image_processor import process_image, create_preview, get_supported_raw_files, needs_processing, update_process_info
 import os
 import json
-from flask_cors import CORS
-import rawpy
-from urllib.parse import quote
-from werkzeug.urls import url_quote  # Importing the specific function
 
+# RAW_IMAGE_DIR = 'raw_images'
+# CONVERTED_IMAGE_DIR = 'converted_images'
+# PROCESS_INFO_FILE = 'process_info.json'
+
+app = Flask(__name__)
+CORS(app)
 RAW_IMAGE_DIR = 'raw_images'
 CONVERTED_IMAGE_DIR = 'converted_images'
 PROCESS_INFO_FILE = 'process_info.json'
 
-
-app = Flask(__name__)
-CORS(app)
-IMAGE_DIR = 'images'
+# app = Flask(__name__)
+# CORS(app)
+# IMAGE_DIR = 'images'
 
 def process_image(file_path):
     exif_info = {}
@@ -115,4 +115,4 @@ def download_image(filename):
     return send_file(file_path, mimetype='application/octet-stream', as_attachment=True)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=3000 , debug=True)
+    app.run(host='0.0.0.0', port=3000, debug=True)
