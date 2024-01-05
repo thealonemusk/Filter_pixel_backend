@@ -23,7 +23,7 @@ def process_image(file_path):
                 if tag not in ('JPEGThumbnail', 'TIFFThumbnail', 'Filename', 'EXIF MakerNote'):
                     exif_info[str(tag)] = str(value)
     except Exception as e:
-        print(f"Error processing image: {e}")
+        print("Error processing image: {}".format(e))
     return exif_info
 
 def create_preview(file_path, preview_path):
