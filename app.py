@@ -6,6 +6,8 @@ import os
 import json
 from flask_cors import CORS
 import rawpy
+from urllib.parse import quote
+from werkzeug.urls import url_quote 
 
 RAW_IMAGE_DIR = 'raw_images'
 CONVERTED_IMAGE_DIR = 'converted_images'
@@ -13,6 +15,7 @@ PROCESS_INFO_FILE = 'process_info.json'
 
 app = Flask(__name__)
 CORS(app)
+IMAGE_DIR = 'images'
 
 def process_image(file_path):
     exif_info = {}
@@ -34,7 +37,7 @@ def create_preview(file_path, preview_path):
             converted_image.thumbnail((2000, 2000))
             converted_image.save(preview_path, 'JPEG')
     except Exception as e:
-        print(f"Error creating preview: {e}")
+        print("Error creating preview: {}".format(e))
 
 def get_supported_raw_files(directory):
     supported_extensions = ['.IIQ', '.3FR', '.DCR', '.K25', '.KDC', '.CRW', '.CR2','.CR3', '.ERF', '.MEF', '.MOS', '.NEF', '.NRW', '.ORF', '.PEF', '.RW2', '.ARW', '.SRF', '.SR2' , '.DNG']
@@ -72,7 +75,7 @@ def get_exif_data(file_path):
                 decoded_tag = TAGS.get(tag, tag)
                 exif_info[decoded_tag] = value
     except Exception as e:
-        print(f"Error getting EXIF data: {e}")
+        print("Error getting EXIF data: {}".format(e))
     return exif_info
 
 @app.route('/images')
