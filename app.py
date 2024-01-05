@@ -1,22 +1,18 @@
 from flask import Flask, jsonify, send_file
-from flask_cors import CORS
-from image_processor import process_image, create_preview, get_supported_raw_files, needs_processing, update_process_info
+from PIL import Image
+from PIL.ExifTags import TAGS
+from exifread import process_file
 import os
 import json
+from flask_cors import CORS
+import rawpy
 
-# RAW_IMAGE_DIR = 'raw_images'
-# CONVERTED_IMAGE_DIR = 'converted_images'
-# PROCESS_INFO_FILE = 'process_info.json'
-
-app = Flask(__name__)
-CORS(app)
 RAW_IMAGE_DIR = 'raw_images'
 CONVERTED_IMAGE_DIR = 'converted_images'
 PROCESS_INFO_FILE = 'process_info.json'
 
-# app = Flask(__name__)
-# CORS(app)
-# IMAGE_DIR = 'images'
+app = Flask(__name__)
+CORS(app)
 
 def process_image(file_path):
     exif_info = {}
@@ -105,7 +101,6 @@ def get_image_preview(filename):
         update_process_info(raw_file_path, os.path.getmtime(raw_file_path))
 
     return send_file(file_path, mimetype='image/jpeg')
-
 
 @app.route('/download/<filename>')
 def download_image(filename):
