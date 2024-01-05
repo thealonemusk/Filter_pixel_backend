@@ -1,14 +1,19 @@
 from flask import Flask, jsonify, send_file
 from PIL import Image
-from exif import Image as ExifImage
+from exifread import process_file
 import os
+from flask_cors import CORS
 import rawpy
-import json
+from werkzeug.urls import url_quote  # Importing the specific function
 
-app = Flask(__name__)
 RAW_IMAGE_DIR = 'raw_images'
 CONVERTED_IMAGE_DIR = 'converted_images'
 PROCESS_INFO_FILE = 'process_info.json'
+
+
+app = Flask(__name__)
+CORS(app)
+IMAGE_DIR = 'images'
 
 def process_image(file_path):
     exif_info = {}
@@ -74,15 +79,26 @@ def get_images():
 
     return jsonify({'images': image_list})
 
+# @app.route('/image-preview/<filename>')
+# def get_image_preview(filename):
+#     file_path = os.path.join(CONVERTED_IMAGE_DIR, filename.replace(os.path.splitext(filename)[1], '.jpg'))
+#     if needs_processing(os.path.join(RAW_IMAGE_DIR, filename), file_path):
+#         raw_file_path = os.path.join(RAW_IMAGE_DIR, filename)
+#         create_preview(raw_file_path, file_path)
+#         update_process_info(raw_file_path, os.path.getmtime(raw_file_path))
+
+#     return send_file(file_path, mimetype='image/jpeg')@app.route('/image-preview/<filename>')
 @app.route('/image-preview/<filename>')
 def get_image_preview(filename):
-    file_path = os.path.join(CONVERTED_IMAGE_DIR, filename.replace(os.path.splitext(filename)[1], '.jpg'))
-    if needs_processing(os.path.join(RAW_IMAGE_DIR, filename), file_path):
-        raw_file_path = os.path.join(RAW_IMAGE_DIR, filename)
-        create_preview(raw_file_path, file_path)
-        update_process_info(raw_file_path, os.path.getmtime(raw_file_path))
+    file_path = os.path.join(IMAGE_DIR, filename)
+    preview_path = 'images/previews/' + url_quote(filename.replace(os.path.splitext(filename)[1], '_preview.jpg'))  # Using url_quote
 
-    return send_file(file_path, mimetype='image/jpeg')
+    if not os.path.exists(preview_path):
+        create_preview(file_path, preview_path)
+
+    return send_file(preview_path, mimetype='image/jpeg')
+
+
 
 @app.route('/download/<filename>')
 def download_image(filename):
